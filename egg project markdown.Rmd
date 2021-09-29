@@ -1,0 +1,241 @@
+---
+title: "egg project"
+author: "Janna M"
+date: "8/23/2021"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+This paper examines the connection between egg mass and avian flight. Past studies have found a link between reproductive strategies in extant non-avian theropod dinosaurs.There have been differences found in the eggshell mass proportions of crown birds and dinosaurs. The differences may be linked to flight but denser sampling was needed . This paper fills that gap by examining the egg shell thickness of  114 dinosaurs and birds and comparing those differences to flight and other life history correlations .
+
+
+In my data replication i will be generating a phylogenetic tree, by reading in a nexus file and using the plot tree function. 
+##Plot Tree 
+#plotTree(tree)
+
+I will also be performing a path analysis to assess i bird eggs and reptile eggs are closely related by using the Wilcox signed-rank test to get the P-value . 
+#wilcox.test(log(EggMass$Mreptile), log(EggMass$Mbird), paired=T)
+ 
+
+I performed a semi path analysis to describe the relationship between body mass and Egg mass and body mass and eggshell thickness, using ggplot. Results show that egg mass and eggshell thickness are strongly correlated and that the correlation is much stronger in flying taxa. 
+
+
+#ggplot(datadino, aes(log(Egg_mass), log(Eggshell_thickness), color=Flight)) + geom_point(size=2) +
+
+
+
+### Loading packages
+- I began by downloading all of the library that the author used . I was unable to download the library"(ggtree)" at first.However, i ended up using ggplot so i didn't need ggtree.
+
+
+```{r, warning = F}
+library(nlme)
+library(ape)
+library(ggplot2)
+library(phytools)
+library(RColorBrewer)
+library(plyr)
+library(dplyr)
+library(evobiR)
+library(AICcmodavg)
+library(RRphylo)
+library(car)
+library(hrbrthemes)
+library(phylopath)
+library(caper)
+library(emmeans)
+library(GGally)
+```
+I download a more recent version of R then Ran the following code to try to download ggtree
+
+#if(!requireNamespace("BioManager",quietly=TRUE))
+#install.packages("BioManager")
+#BioManager::install("ggtree")
+
+However I could not download the package BioManager, but i think ggplot was installed because i was able to use it . 
+
+Next, i tried to load the tree. I've done this before in my own research , but at first it would not run.Once I re-imported the data set, it ran.
+
+```{r}
+
+# Load tree 
+library(readr)
+treewholenew_trees <- read_csv("~/egg project/dinosaureggshellproject-main/treewholenew.trees.nex")
+View(treewholenew_trees)
+show_col_types = FALSE
+```
+```{r}
+# Read tree using Nexus file 
+library(ape)
+library(phytools)
+library(tidyverse)
+
+#tree and data
+tree<-read.nexus("~/egg project/dinosaureggshellproject-main/treewholenew.trees.nex")
+```
+Next I plotted the tree. 
+
+```{r}
+#Plot Tree 
+plotTree(tree)
+#Authors graph
+knitr::include_graphics("tree pic.JPG")
+
+```
+Then i imported the rest of the datasets i found online into the environment manually.
+
+Next , I read in the data table that contains the information for the clade,	taxon,eggshell thickness, egg_mass, body mass,flight,nesting site, Nest type,and precociality. 
+
+Then i subset the data because several values for egg mass were missing.
+
+```{r}
+
+
+data<-read.table("Datawhole.txt", header=T, stringsAsFactors=T)
+
+mydata<-subset(data, !is.na(Egg_mass))
+
+
+```
+
+
+Next, i assign the data egg mass equation as egg mass. I calculated the delta between the EggMass$Mreptile and EggMass$Mbird. I also calculated the P-value. 
+
+EggMass$Mreptile- is the egg of a non-avian reptile,using the equation of Deeming and Ferguson, 1990. 
+
+EggMass$Mbird- is the estimated egg mass of a bird , using the equation of Hoyt, 1979.
+
+Delta is the change in the values .
+
+The two equations are similar, but the allometric exponent for 
+for birds: M = 0.00056 * L * W^2
+and for non-avian reptiles the allometic exponent is : M = 0.000548 * L * W^2
+
+```{r}
+#Load and assign egg mass 
+
+EggMass <-read.table("Data_Eggmass_equations.txt", header=T, stringsAsFactors=T)
+
+
+# Find the change in value or delta 
+delta<-log(EggMass$Mreptile) - log(EggMass$Mbird)
+show(delta)
+
+# Wilcoxon signed-rank test to get the P-value 
+wilcox.test(log(EggMass$Mreptile), log(EggMass$Mbird), paired=T)
+ 
+
+# test for body mass vs egg mass
+wilcox.test(log(EggMass$Mbird), log(EggMass$Mreptile), paired=T)
+
+
+#Authors wilcox test 
+knitr::include_graphics("wilcox correct.JPG")
+```
+The results show that the reptile  and bird eggs  have a high correlation and are statically significant based on the P values.
+
+The Equations are so similar that using one or the other does not influence the result and the delta value shows this.
+
+The author and I got the same P-Values.
+
+
+Next i performed a regression describing the relationship between egg mass and eggshell thickness. 
+
+#Regression 
+```{r}
+datadino<-data%>%filter(Clade=="Neognaths"|Clade=="Non-avian_dinosaurs"|Clade=="Paleognaths"|Clade== "Enantiornithes"|Clade=="Ornithuromorphs")
+regressL<- lm(Eggshell_thickness~Egg_mass,data = datadino)
+summary(regressL)
+
+#Authors Regression 
+knitr::include_graphics("Author reg.JPG")
+
+```
+The R- squared value shows a that there is a relationship between but not a high correlation but the the relationship statistically significant 
+
+My values and the authors values were not the same 
+
+
+Next i ran regression on egg mass and eggshell thickness to body mass.
+
+```{r}
+regress1<- lm(Egg_mass+Eggshell_thickness~Body_mass,data = data)
+summary(regress1)
+```
+Egg mass and eggshell thickness are highly correlated based on the R-Squared value. 
+For every one gram of egg mass there is a 28.216 unit increase .For ever micrometer of eggshell thickness there is a 27.546 unit increase 
+
+
+
+#Data Visualization  
+I used ggplot for this graph that represents Ln of  egg mass vs Ln of eggshell thickness. I was under the impression it did not load but it did .
+
+Read in table for equations 
+```{r}
+EggMass<-read.table ("Data_Eggmass_equations.txt", header=TRUE)
+```
+Plot egg mass vs eggshell thickness
+
+```{r}
+
+ggplot(EggMass, aes(log(Mreptile), log(Eggshell_thickness), color=Group)) +
+geom_point(size=5) +
+xlab("ln egg mass (g)") +
+ylab("ln eggshell thickness (µm)") +
+scale_colour_brewer("group", palette="Set2")
+#Authors graph
+knitr::include_graphics("pic2.png")
+
+```
+
+
+Plot body mass vs egg mass 
+
+I used ggplot again to plot body mass vs egg mass.
+At first the graph looked weird because many of the data was missing body mass.
+
+
+Egg mass was missing from many species i used  code to remove missing data for body mass then i re-ran the code and i got a graph similar to that of the author. 
+```{r}
+datamass<-subset(data, !is.na(data$Body_mass))
+
+```
+
+
+The two graphs look similar
+
+
+Next i wanted to examine the relationship between Egg mass and body mass. (Extra)
+```{r}
+ggplot(datamass, aes(log(Egg_mass), log(Body_mass), color=Clade)) + geom_point(size=2) +
+xlab("Egg mass (g)") +
+ylab("Body mass  (µm)") +
+scale_colour_brewer("group", palette="Set2")
+
+```
+
+
+
+Phylogenetic path analysis is an extremely long process to go through it is both time and computationally intensive. It also requires knowledge that has nothing to do with statistics and more to do with phylogenetics. What I wanted to do Is illustrate the author’s main point which is that  there is a difference in the relationship between eggshell thickness and egg mass in taxa that fly and taxa that do not .
+
+This is my attempt to recreate a path analysis graph 
+I was unable to get the residual variance graph to display on the graph.
+
+
+
+```{r}
+ggplot(datadino, aes(log(Egg_mass), log(Eggshell_thickness), color=Flight)) + geom_point(size=2) +
+xlab("Egg mass (g)") +
+ylab("eggshell thickness  (µm)") +
+scale_colour_brewer("flight", palette="Set2") 
+ #Authors graph
+knitr::include_graphics("final.png")
+
+```
+```
+Egg mass is a good proxy for body mass. 
+
+Non flyers have a higher egg mass and eggshell thickness.
+
+Results show that egg mass and eggshell thickness are strongly correlated and that the correlation is much stronger in flying taxa. 
